@@ -1,5 +1,5 @@
-#include <xc.h>
 #include <stdarg.h>
+#include <xc.h>
 
 #include <hal.h>
 
