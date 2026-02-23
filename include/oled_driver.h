@@ -14,3 +14,11 @@ void oled_init(void);
 void oled_set_pos(uint8_t page, uint8_t col);
 
 void oled_clear(void);
+
+void update_char_mem(char c);
+
+void oled_put_char(char c);
+
+void oled_next_line();
+
+void put_char(char c);
