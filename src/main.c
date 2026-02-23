@@ -34,11 +34,12 @@ void oled_put_char(char c)
         oled_pos.x++;
 
         if (oled_pos.x == 15) {
-            oled_pos.y++;
-            oled_pos.x = 0;
-            oled_pos.dirty = 1;
             if (oled_pos.y == 7)
                 oled_pos.y = 0;
+            else
+                oled_pos.y++;
+            oled_pos.x = 0;
+            oled_pos.dirty = 1;
         }
     }
 
@@ -48,18 +49,9 @@ void oled_put_char(char c)
     }
 }
 
-void main(void)
+void test_number()
 {
-    oled_init();
-    oled_clear();
-
     uint8_t cnt = 0;
-    oled_pos.x = 0;
-    oled_pos.y = 0;
-    oled_pos.dirty = 0;
-
-    oled_set_pos(0, 0);
-
     while (1) {
         oled_put_char('0' + cnt);
         cnt++;
@@ -70,4 +62,29 @@ void main(void)
         }
         __delay_ms(100);
     }
+}
+
+void test_alpha()
+{
+    uint8_t cnt = 0;
+    while (1) {
+        oled_put_char('A' + cnt);
+        cnt = (cnt + 1) % 26;
+        __delay_ms(100);
+    }
+}
+
+void main(void)
+{
+    oled_init();
+    oled_clear();
+
+
+    oled_pos.x = 0;
+    oled_pos.y = 0;
+    oled_pos.dirty = 0;
+
+    oled_set_pos(0, 0);
+
+    test_alpha();
 }
