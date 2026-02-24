@@ -42,13 +42,14 @@ void oled_clear(void)
 
 void oled_put_char(char c)
 {
-    if (!memory_ptr_out) {
+    if (!(memory_ptr_out & 1)) {
         if (c == '\n') {
             if (oled_pos.y == 7) {
-                memory_ptr_out = 1;
+                memory_ptr_out |= 1;
                 return;
             } else {
                 oled_pos.y++;
+                oled_pos.x = 0;
                 oled_pos.dirty = 1;
             }
         } else if (c >= 0x20 && c <= 0x7E) {
@@ -84,16 +85,16 @@ void oled_put_char(char c)
     }
 }
 
+unsigned char i;
+
 void oled_next_line()
 {
     start_page = (start_page + 1) & 0x7;
     oled_cmd(0x40 | (start_page * 8));
 
-    unsigned char i;
-
     for (i = 0; i < 16;
          i++, oled_show_start = (oled_show_start + 1) % CHAR_MEMORY_NUM) {
-        if (!char_mem_is_new_line(char_mem, oled_show_start)) {
+        if (char_mem_is_new_line(char_mem, oled_show_start)) {
             oled_show_start = (oled_show_start + 1) % CHAR_MEMORY_NUM;
             break;
         }
@@ -103,13 +104,17 @@ void oled_next_line()
     oled_pos.x = 0;
     oled_set_pos(7, 0);
 
-    for (i = 0; i < 16 && char_mem.mem[oled_show_end]; i++, oled_show_end++) {
-        oled_put_char(char_mem.mem[oled_show_end]);
-        if (!char_mem_is_new_line(char_mem, oled_show_end)) {
-            oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM;
+    memory_ptr_out = (char) (memory_ptr_out << 1);
+    for (i = 0; i < 16 && char_mem.mem[oled_show_end]; i++) {
+        oled_put_char(remove_newline_mark(char_mem, oled_show_end));
+        if (char_mem_is_new_line(char_mem, oled_show_end)) {
+            oled_put_char(remove_newline_mark(char_mem, oled_show_end));
+            i += 2;
             break;
         }
     }
+    memory_ptr_out = memory_ptr_out >> 1;
+
 
     /* clean line */
     for (i = i * 8; i < 128; i++)
@@ -118,13 +123,13 @@ void oled_next_line()
     oled_set_pos(oled_pos.y, oled_pos.x);
 }
 
+void oled_prev_line() {}
+
 void put_char(char c)
 {
     oled_put_char(c);
+    uart_putchar(c);
+    if (c == '\n')
+        uart_putchar('\r');
     update_char_mem(&char_mem, c);
-
-    if (memory_ptr_out) {
-        oled_next_line();
-        memory_ptr_out = 0;
-    }
 }

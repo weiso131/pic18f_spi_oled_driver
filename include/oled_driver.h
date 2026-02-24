@@ -6,6 +6,8 @@ void oled_put_char(char c);
 
 void oled_next_line();
 
+void oled_prev_line();
+
 void put_char(char c);
 
 void oled_set_pos(uint8_t page, uint8_t col);
