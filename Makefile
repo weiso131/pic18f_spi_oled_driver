@@ -3,7 +3,7 @@ BUILD = build
 SRC = src
 CFLAGS = -mcpu=18F4520 -mdfp=`pwd`/dfp/xc8 -Wl,-Map=$(BUILD)/main.map -Iinclude
 
-SRCS = src/oled_driver.c src/main.c
+SRCS = src/oled_driver.c src/main.c src/char_mem.c src/hal.c
 OBJS := $(patsubst src/%.c,$(BUILD)/%.p1,$(SRCS))
 
 
