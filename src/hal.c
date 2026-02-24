@@ -58,3 +58,30 @@ void oled_init(void)
     oled_cmd(0xFF);  // Max contrast
     oled_cmd(0xAF);  // Display ON
 }
+
+void uart_init(void)
+{
+    unsigned long baud = 9600;
+    unsigned long spbrg;
+
+    TXSTAbits.SYNC = 0;
+    TXSTAbits.BRGH = 1;
+    BAUDCONbits.BRG16 = 1;
+
+    spbrg = (_XTAL_FREQ / (4UL * baud)) - 1;
+
+    SPBRG = spbrg & 0xFF;
+    SPBRGH = (spbrg >> 8) & 0xFF;
+
+    RCSTAbits.SPEN = 1;
+    TXSTAbits.TXEN = 1;
+    RCSTAbits.CREN = 1;
+}
+
+
+inline void uart_putchar(char c)
+{
+    while (!PIR1bits.TXIF)
+        ;
+    TXREG = c;
+}

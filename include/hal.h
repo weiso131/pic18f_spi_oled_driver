@@ -20,3 +20,7 @@ void spi_init(void);
 
 // Initialize display
 void oled_init(void);
+
+void uart_init(void);
+
+inline void uart_putchar(char c);
