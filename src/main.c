@@ -34,6 +34,7 @@ void test_alpha()
         put_char('A' + i);
         put_char('A' + i);
         put_char('A' + i);
+        put_char('\n');
         __delay_ms(1);
     }
 }

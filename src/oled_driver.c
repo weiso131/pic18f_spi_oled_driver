@@ -15,7 +15,9 @@ oled_pos_t oled_pos = {0};
 
 unsigned int oled_show_start = 0;
 unsigned int oled_show_end = 0;
-char memory_ptr_out = 0;
+char oled_status = 0;
+/* | 5 bits NOP | 1 bits newline disable | 1 bits memory out save | 1 bits
+ * memory out | */
 
 unsigned char start_page = 0;
 
@@ -42,10 +44,12 @@ void oled_clear(void)
 
 void oled_put_char(char c)
 {
-    if (!(memory_ptr_out & 1)) {
+    if (!(oled_status & 1)) {
         if (c == '\n') {
-            if (oled_pos.y == 7) {
-                memory_ptr_out |= 1;
+            if (oled_status & 0x4)
+                oled_status &= 0xFB;
+            else if (oled_pos.y == 7) {
+                oled_status |= 1;
                 return;
             } else {
                 oled_pos.y++;
@@ -63,12 +67,13 @@ void oled_put_char(char c)
             oled_send_data(font_8x8[c - 0x20][5]);
             oled_send_data(font_8x8[c - 0x20][6]);
             oled_send_data(font_8x8[c - 0x20][7]);
-
+            oled_status &= 0xFB;
             if (oled_pos.x == 15) {
                 if (oled_pos.y == 7) {
-                    memory_ptr_out = 1;
+                    oled_status |= 1;
                     return;
                 } else {
+                    oled_status |= 0x4;  // the next newline will ignore
                     oled_pos.y++;
                     oled_pos.x = 0;
                     oled_pos.dirty = 1;
@@ -103,17 +108,19 @@ void oled_next_line()
     oled_pos.y = 7;
     oled_pos.x = 0;
     oled_set_pos(7, 0);
-
-    memory_ptr_out = (char) (memory_ptr_out << 1);
+    uart_putchar('\r');
+    uart_putchar('\n');
+    oled_status = (char) ((oled_status & 1) << 1) | (oled_status & 0xFA);
     for (i = 0; i < 16 && char_mem.mem[oled_show_end]; i++) {
+        uart_putchar(remove_newline_mark(char_mem, oled_show_end));
         oled_put_char(remove_newline_mark(char_mem, oled_show_end));
         if (char_mem_is_new_line(char_mem, oled_show_end)) {
             oled_put_char(remove_newline_mark(char_mem, oled_show_end));
-            i += 2;
+            i += 2;  // put char 2 times
             break;
         }
     }
-    memory_ptr_out = memory_ptr_out >> 1;
+    oled_status = (char) ((oled_status & 2) >> 1 | (oled_status & 0xFA));
 
 
     /* clean line */
