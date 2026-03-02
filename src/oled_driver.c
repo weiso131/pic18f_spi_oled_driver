@@ -90,6 +90,8 @@ unsigned char i;
 
 void oled_next_line()
 {
+    if (oled_show_end == char_mem.end_ptr)
+        return;
     start_page = (start_page + 1) & 0x7;
     oled_cmd(0x40 | (start_page * 8));
 
@@ -104,11 +106,8 @@ void oled_next_line()
     oled_pos.y = 7;
     oled_pos.x = 0;
     oled_set_pos(7, 0);
-    uart_putchar('\r');
-    uart_putchar('\n');
 
     for (i = 0; i < 16 && char_mem.mem[oled_show_end]; i++) {
-        uart_putchar(remove_newline_mark(char_mem, oled_show_end));
         oled_put_char(remove_newline_mark(char_mem, oled_show_end));
         oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM;
         if (char_mem_is_new_line(char_mem, oled_show_end)) {
@@ -129,6 +128,8 @@ void oled_next_line()
 
 void oled_prev_line()
 {
+    if (oled_show_start == char_mem.start_ptr)
+        return;
     start_page = (start_page + 0x7) & 0x7;
     oled_cmd(0x40 | (start_page * 8));
 

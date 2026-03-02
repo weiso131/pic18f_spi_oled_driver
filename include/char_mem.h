@@ -2,7 +2,7 @@
 #define CHAR_MEMORY_NUM 0x500
 
 typedef struct char_mem {
-    unsigned int memory_ptr;
+    unsigned int start_ptr, end_ptr;
     char mem[CHAR_MEMORY_NUM];
 } char_mem_t;
 
