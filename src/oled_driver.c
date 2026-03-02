@@ -44,49 +44,45 @@ void oled_clear(void)
 
 void oled_put_char(char c)
 {
-    if (!(oled_status & 1)) {
-        if (c == '\n') {
-            if (oled_status & 0x4)
-                oled_status &= 0xFB;
-            else if (oled_pos.y == 7) {
+    if (c == '\n') {
+        if (oled_status & 0x4)
+            oled_status &= 0xFB;
+        else if (oled_pos.y == 7) {
+            oled_status |= 1;
+            return;
+        } else {
+            oled_pos.y++;
+            oled_pos.x = 0;
+            oled_pos.dirty = 1;
+        }
+    } else if (c >= 0x20 && c <= 0x7E) {
+        oled_send_data(font_8x8[c - 0x20][0]);
+        oled_send_data(font_8x8[c - 0x20][1]);
+        oled_send_data(font_8x8[c - 0x20][2]);
+        oled_send_data(font_8x8[c - 0x20][3]);
+        oled_send_data(font_8x8[c - 0x20][4]);
+        oled_send_data(font_8x8[c - 0x20][5]);
+        oled_send_data(font_8x8[c - 0x20][6]);
+        oled_send_data(font_8x8[c - 0x20][7]);
+        oled_status &= 0xFB;
+        if (oled_pos.x == 15) {
+            if (oled_pos.y == 7) {
                 oled_status |= 1;
                 return;
             } else {
+                oled_status |= 0x4;  // the next newline will ignore
                 oled_pos.y++;
                 oled_pos.x = 0;
                 oled_pos.dirty = 1;
             }
-        } else if (c >= 0x20 && c <= 0x7E) {
-            oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM;
-
-            oled_send_data(font_8x8[c - 0x20][0]);
-            oled_send_data(font_8x8[c - 0x20][1]);
-            oled_send_data(font_8x8[c - 0x20][2]);
-            oled_send_data(font_8x8[c - 0x20][3]);
-            oled_send_data(font_8x8[c - 0x20][4]);
-            oled_send_data(font_8x8[c - 0x20][5]);
-            oled_send_data(font_8x8[c - 0x20][6]);
-            oled_send_data(font_8x8[c - 0x20][7]);
-            oled_status &= 0xFB;
-            if (oled_pos.x == 15) {
-                if (oled_pos.y == 7) {
-                    oled_status |= 1;
-                    return;
-                } else {
-                    oled_status |= 0x4;  // the next newline will ignore
-                    oled_pos.y++;
-                    oled_pos.x = 0;
-                    oled_pos.dirty = 1;
-                }
-            } else
-                oled_pos.x++;
         } else
-            return;
+            oled_pos.x++;
+    } else
+        return;
 
-        if (oled_pos.dirty) {
-            oled_set_pos(oled_pos.y, oled_pos.x * 8);
-            oled_pos.dirty = 0;
-        }
+    if (oled_pos.dirty) {
+        oled_set_pos(oled_pos.y, oled_pos.x * 8);
+        oled_pos.dirty = 0;
     }
 }
 
@@ -110,17 +106,18 @@ void oled_next_line()
     oled_set_pos(7, 0);
     uart_putchar('\r');
     uart_putchar('\n');
-    oled_status = (char) ((oled_status & 1) << 1) | (oled_status & 0xFA);
-    for (i = 0; i < 16 && char_mem.mem[oled_show_end]; i++) {
+
+    for (i = 0; i < 16 && char_mem.mem[oled_show_end];
+         i++, oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM) {
         uart_putchar(remove_newline_mark(char_mem, oled_show_end));
         oled_put_char(remove_newline_mark(char_mem, oled_show_end));
         if (char_mem_is_new_line(char_mem, oled_show_end)) {
             oled_put_char(remove_newline_mark(char_mem, oled_show_end));
+            oled_show_end = (oled_show_end + 2) % CHAR_MEMORY_NUM;
             i += 2;  // put char 2 times
             break;
         }
     }
-    oled_status = (char) ((oled_status & 2) >> 1 | (oled_status & 0xFA));
 
 
     /* clean line */
@@ -134,7 +131,12 @@ void oled_prev_line() {}
 
 void put_char(char c)
 {
-    oled_put_char(c);
+    if (!(oled_status & 1)) {
+        oled_put_char(c);
+        if (c >= 0x20 && c <= 0x7E)
+            oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM;
+    }
+
     uart_putchar(c);
     if (c == '\n')
         uart_putchar('\r');
