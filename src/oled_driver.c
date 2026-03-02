@@ -103,8 +103,6 @@ void oled_next_line()
         }
     }
 
-    oled_pos.y = 7;
-    oled_pos.x = 0;
     oled_set_pos(7, 0);
 
     for (i = 0; i < 16 && char_mem.mem[oled_show_end]; i++) {
@@ -179,9 +177,14 @@ void put_char(char c)
         if (c >= 0x20 && c <= 0x7E)
             oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM;
     }
-
-    uart_putchar(c);
-    if (c == '\n')
-        uart_putchar('\r');
     update_char_mem(&char_mem, c);
+
+    if (char_mem.end_ptr == (oled_show_end + 1) % CHAR_MEMORY_NUM &&
+        (oled_status & 1)) {
+        oled_next_line();
+        oled_status ^= 1;
+        oled_pos.y = 7;
+        oled_pos.x = 1;
+        oled_set_pos(oled_pos.y, oled_pos.x * 8);
+    }
 }

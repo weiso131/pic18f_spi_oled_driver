@@ -24,3 +24,5 @@ void oled_init(void);
 void uart_init(void);
 
 inline void uart_putchar(char c);
+
+inline char uart_getchar(void);

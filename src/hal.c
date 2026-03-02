@@ -85,3 +85,10 @@ inline void uart_putchar(char c)
         ;
     TXREG = c;
 }
+
+inline char uart_getchar(void)
+{
+    while (!PIR1bits.RCIF)
+        ;
+    return RCREG;
+}

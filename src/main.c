@@ -18,24 +18,21 @@ void test_number()
 void test_alpha()
 {
     for (unsigned char i = 0; i < 26; i++) {
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
-        put_char('A' + i);
+        for (unsigned char j = 0; j < 6; j++)
+            put_char('A' + i);
+        for (unsigned char j = 0; j < 10; j++)
+            put_char('0' + j);
         put_char('\n');
-        __delay_ms(1);
+        __delay_ms(100);
+    }
+}
+
+void picos_comm()
+{
+    while (1) {
+        char c = uart_getchar();
+        put_char(c);
+        uart_putchar(c);
     }
 }
 
@@ -76,7 +73,7 @@ void main(void)
 
     oled_set_pos(0, 0);
 
-    test_alpha();
+    picos_comm();
 
     while (1)
         ;
