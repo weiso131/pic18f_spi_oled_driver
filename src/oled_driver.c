@@ -23,6 +23,8 @@ unsigned char start_page = 0;
 
 char_mem_t char_mem = {0};
 
+unsigned char i;
+
 // Set position
 void oled_set_pos(uint8_t page, uint8_t col)
 {
@@ -55,6 +57,34 @@ void oled_put_char(char c)
             oled_pos.x = 0;
             oled_pos.dirty = 1;
         }
+    } else if (c == '\b' && !(oled_pos.x == 0 && oled_pos.y == 0)) {
+        oled_show_end = (oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
+        /* This should be done in update_char_mem, but in here */
+        /* I don't need to deal with other problem */
+        char_mem.mem[char_mem.end_ptr] = '\0';
+        char_mem.end_ptr =
+            (char_mem.end_ptr - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
+        if (oled_status & 1) {
+            for (i = 1;
+                 i < 15 && !char_mem_is_new_line(
+                               char_mem, (oled_show_end - i + CHAR_MEMORY_NUM) %
+                                             CHAR_MEMORY_NUM);
+                 i++)
+                ;
+            oled_pos.x = i;
+        } else if (oled_pos.x == 0) {
+            oled_pos.y--;
+            for (i = 1;
+                 i < 15 && !char_mem_is_new_line(
+                               char_mem, (oled_show_end - i + CHAR_MEMORY_NUM) %
+                                             CHAR_MEMORY_NUM);
+                 i++)
+                ;
+            oled_pos.x = i;
+        } else
+            oled_pos.x--;
+        oled_pos.dirty = 1;
+        oled_status &= 0xFC;
     } else if (c >= 0x20 && c <= 0x7E) {
         oled_send_data(font_8x8[c - 0x20][0]);
         oled_send_data(font_8x8[c - 0x20][1]);
@@ -85,8 +115,6 @@ void oled_put_char(char c)
         oled_pos.dirty = 0;
     }
 }
-
-unsigned char i;
 
 void oled_next_line()
 {
@@ -172,7 +200,8 @@ void oled_prev_line()
 
 void put_char(char c)
 {
-    if (!(oled_status & 1)) {
+    if ((c == '\b' && char_mem.end_ptr == oled_show_end) ||
+        !(oled_status & 1)) {
         oled_put_char(c);
         if (c >= 0x20 && c <= 0x7E)
             oled_show_end = (oled_show_end + 1) % CHAR_MEMORY_NUM;

@@ -32,7 +32,6 @@ void picos_comm()
     while (1) {
         char c = uart_getchar();
         put_char(c);
-        uart_putchar(c);
     }
 }
 
