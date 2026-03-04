@@ -144,12 +144,18 @@ void oled_next_line()
         }
     }
 
+    oled_pos.x = i;
 
     /* clean line */
     for (i = i * 8; i < 128; i++)
         oled_send_data(0x00);
 
-    oled_set_pos(oled_pos.y, oled_pos.x);
+    if (char_mem.end_ptr == oled_show_end) {
+        oled_pos.y = 7;
+        oled_status &= 0xFC;
+    }
+
+    oled_set_pos(oled_pos.y, oled_pos.x * 8);
 }
 
 void oled_prev_line()
@@ -194,8 +200,7 @@ void oled_prev_line()
     /* clean line */
     for (i = i * 8; i < 128; i++)
         oled_send_data(0x00);
-
-    oled_set_pos(oled_pos.y, oled_pos.x);
+    oled_status |= 1;
 }
 
 void put_char(char c)
@@ -209,11 +214,6 @@ void put_char(char c)
     update_char_mem(&char_mem, c);
 
     if (char_mem.end_ptr == (oled_show_end + 1) % CHAR_MEMORY_NUM &&
-        (oled_status & 1)) {
+        (oled_status & 1))
         oled_next_line();
-        oled_status ^= 1;
-        oled_pos.y = 7;
-        oled_pos.x = 1;
-        oled_set_pos(oled_pos.y, oled_pos.x * 8);
-    }
 }
