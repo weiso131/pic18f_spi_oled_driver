@@ -21,3 +21,11 @@ void update_char_mem(char_mem_t *self, char c)
         self->mem[self->end_ptr] = '\0';
     }
 }
+
+void reset_char_mem(char_mem_t *self)
+{
+    self->start_ptr = 0;
+    self->end_ptr = 0;
+    for (unsigned int i = 0; i < CHAR_MEMORY_NUM; i++)
+        self->mem[i] = '\0';
+}

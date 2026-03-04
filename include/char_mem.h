@@ -8,6 +8,8 @@ typedef struct char_mem {
 
 void update_char_mem(char_mem_t *self, char c);
 
+void reset_char_mem(char_mem_t *self);
+
 #define char_mem_is_new_line(self, pos) (self.mem[pos] & CHAR_MEMORY_NEWLINE)
 
 #define remove_newline_mark(self, pos) (self.mem[pos] & 0x7F)

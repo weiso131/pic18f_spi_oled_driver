@@ -205,6 +205,21 @@ void oled_prev_line()
 
 void put_char(char c)
 {
+    if (c == 0x3) {
+        oled_pos.dirty = 0;
+        oled_pos.x = 0;
+        oled_pos.y = 0;
+        oled_show_start = 0;
+        oled_show_end = 0;
+        oled_status = 0;
+        start_page = 0;
+        reset_char_mem(&char_mem);
+        oled_clear();
+        oled_cmd(0x40);  // reste start page
+        oled_set_pos(0, 0);
+        return;
+    }
+
     if ((c == '\b' && char_mem.end_ptr == oled_show_end) ||
         !(oled_status & 1)) {
         oled_put_char(c);
