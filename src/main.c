@@ -1,38 +1,13 @@
 #include <oled_driver.h>
 
-void test_number()
-{
-    uint8_t cnt = 0;
-    while (1) {
-        put_char('0' + cnt);
-        cnt++;
-        if (cnt == 10) {
-            cnt = 0;
-            put_char('\r');
-            put_char('\n');
-        }
-        __delay_ms(100);
-    }
-}
-
-void test_alpha()
-{
-    for (unsigned char i = 0; i < 26; i++) {
-        for (unsigned char j = 0; j < 6; j++)
-            put_char('A' + i);
-        for (unsigned char j = 0; j < 10; j++)
-            put_char('0' + j);
-        put_char('\n');
-        __delay_ms(100);
-    }
-}
+oled_control_t oled_control;
 
 void picos_comm()
 {
     while (1) {
         char c = uart_getchar();
         INTCONbits.GIE = 0;
-        put_char(c);
+        put_char(&oled_control, c);
         INTCONbits.GIE = 1;
     }
 }
@@ -40,13 +15,13 @@ void picos_comm()
 void __interrupt(high_priority) high_isr(void)
 {
     if (INTCONbits.INT0IF) {
-        oled_next_line();
+        oled_next_line(&oled_control);
         INTCONbits.INT0IF = 0;
     }
 
     // INT1 External Interrupt
     if (INTCON3bits.INT1IF) {
-        oled_prev_line();
+        oled_prev_line(&oled_control);
         INTCON3bits.INT1IF = 0;
     }
 }
@@ -70,9 +45,7 @@ void main(void)
     uart_init();
 
     oled_init();
-    oled_clear();
-
-    oled_set_pos(0, 0);
+    oled_control_init(&oled_control);
 
     picos_comm();
 
