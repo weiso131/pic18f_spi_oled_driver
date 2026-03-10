@@ -4,10 +4,8 @@ oled_control_t oled_control;
 
 void picos_comm()
 {
-    while (1) {
+    while (1)
         put_char(&oled_control);
-        __delay_ms(10);
-    }
 }
 
 void __interrupt(high_priority) high_isr(void)

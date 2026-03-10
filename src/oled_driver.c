@@ -167,6 +167,7 @@ void oled_control_init(oled_control_t *self)
     oled_cmd(0x40);  // reset start page
     oled_set_pos(self, 0, 0);
 }
+
 void put_char(oled_control_t *self)
 {
     while (1) {
@@ -175,12 +176,42 @@ void put_char(oled_control_t *self)
             break;
         INTCONbits.GIE = 1;
     }
+    INTCONbits.INT0IE = 0;
+    INTCON3bits.INT1IE = 0;
+    if (self->oled_status & 1) {
+        INTCONbits.GIE = 1;
+        self->start_page = (self->start_page + 1) & 0x7;
+        oled_cmd(0x40 | (self->start_page * 8));
 
-    /* interrupt will disable here */
-    if (!(self->oled_status & 1)) {
-        i = self->char_mem.mem[self->oled_show_end];
-        oled_put_char(self, i);
-        self->oled_show_end = (self->oled_show_end + 1) % CHAR_MEMORY_NUM;
+        for (i = 0; i < 16;
+             i++, self->oled_show_start =
+                      (self->oled_show_start + 1) % CHAR_MEMORY_NUM) {
+            if (char_mem_is_new_line(self->char_mem, self->oled_show_start)) {
+                self->oled_show_start =
+                    (self->oled_show_start + 1) % CHAR_MEMORY_NUM;
+                break;
+            }
+        }
+
+        oled_set_pos(self, 7, 0);
+
+        for (i = 0; i < 128; i++)
+            oled_send_data(0x00);
+
+        self->oled_pos.y = 7;
+        self->oled_pos.x = 0;
+        self->oled_status &= 0xFC;
+
+        oled_set_pos(self, self->oled_pos.y, self->oled_pos.x * 8);
+
+        INTCONbits.GIE = 0;
     }
+
+    i = self->char_mem.mem[self->oled_show_end];
+    oled_put_char(self, i);
+    self->oled_show_end = (self->oled_show_end + 1) % CHAR_MEMORY_NUM;
+
     INTCONbits.GIE = 1;
+    INTCONbits.INT0IE = 1;
+    INTCON3bits.INT1IE = 1;
 }
