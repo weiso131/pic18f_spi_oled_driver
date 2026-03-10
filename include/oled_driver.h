@@ -27,7 +27,7 @@ void oled_next_line(oled_control_t *self);
 
 void oled_prev_line(oled_control_t *self);
 
-void put_char(oled_control_t *self, char c);
+void put_char(oled_control_t *self);
 
 void oled_control_init(oled_control_t *self);
 

@@ -206,22 +206,21 @@ void oled_control_init(oled_control_t *self)
     oled_cmd(0x40);  // reset start page
     oled_set_pos(self, 0, 0);
 }
-void put_char(oled_control_t *self, char c)
+void put_char(oled_control_t *self)
 {
-    if (c == 0x3) {
-        oled_control_init(self);
-        return;
+    while (1) {
+        INTCONbits.GIE = 0;
+        if (self->char_mem.end_ptr > self->oled_show_end)
+            break;
+        INTCONbits.GIE = 1;
     }
 
-    if ((c == '\b' && self->char_mem.end_ptr == self->oled_show_end) ||
-        !(self->oled_status & 1)) {
-        oled_put_char(self, c);
-        if (c >= 0x20 && c <= 0x7E)
-            self->oled_show_end = (self->oled_show_end + 1) % CHAR_MEMORY_NUM;
+    /* interrupt will disable here */
+    if (!(self->oled_status & 1)) {
+        i = self->char_mem.mem[self->oled_show_end];
+        uart_putchar(':');
+        oled_put_char(self, i);
+        self->oled_show_end = (self->oled_show_end + 1) % CHAR_MEMORY_NUM;
     }
-    update_char_mem(&self->char_mem, c);
-
-    if (self->char_mem.end_ptr == (self->oled_show_end + 1) % CHAR_MEMORY_NUM &&
-        (self->oled_status & 1))
-        oled_next_line(self);
+    INTCONbits.GIE = 1;
 }

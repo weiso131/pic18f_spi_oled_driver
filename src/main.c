@@ -5,24 +5,32 @@ oled_control_t oled_control;
 void picos_comm()
 {
     while (1) {
-        char c = uart_getchar();
-        INTCONbits.GIE = 0;
-        put_char(&oled_control, c);
-        INTCONbits.GIE = 1;
+        put_char(&oled_control);
+        __delay_ms(10);
     }
 }
 
 void __interrupt(high_priority) high_isr(void)
 {
-    if (INTCONbits.INT0IF) {
+    if (INTCONbits.INT0IF && INTCONbits.INT0IE) {
         oled_next_line(&oled_control);
         INTCONbits.INT0IF = 0;
     }
 
-    // INT1 External Interrupt
-    if (INTCON3bits.INT1IF) {
+    if (INTCON3bits.INT1IF && INTCON3bits.INT1IE) {
         oled_prev_line(&oled_control);
         INTCON3bits.INT1IF = 0;
+    }
+
+    if (PIR1bits.RCIF) {
+        char c = RCREG;
+        uart_putchar(c);
+        if (c == 0x3)
+            oled_control_init(&oled_control);
+        else {
+            update_char_mem(&(oled_control.char_mem), c);
+        }
+        PIR1bits.RCIF = 0;
     }
 }
 
@@ -41,6 +49,7 @@ void main(void)
     RCONbits.IPEN = 0;
     INTCONbits.GIE = 1;
     INTCONbits.PEIE = 1;
+    PIE1bits.RCIE = 1;
 
     uart_init();
 
