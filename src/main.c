@@ -24,7 +24,6 @@ void __interrupt(high_priority) high_isr(void)
 
     if (PIR1bits.RCIF) {
         char c = RCREG;
-        uart_putchar(c);
         if (c == 0x3)
             oled_control_init(&oled_control);
         else {
