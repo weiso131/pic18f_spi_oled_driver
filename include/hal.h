@@ -1,9 +1,10 @@
 #include <xc.h>
 
-#pragma config OSC = HS
+#pragma config OSC = INTIO67
 #pragma config WDT = OFF
 #pragma config LVP = OFF
 #pragma config PBADEN = OFF
+#pragma config MCLRE = ON
 
 #define _XTAL_FREQ 4000000ULL
 

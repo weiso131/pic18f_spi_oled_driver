@@ -33,6 +33,12 @@ void __interrupt(high_priority) high_isr(void)
 
 void main(void)
 {
+    OSCCONbits.IRCF = 0b110;
+    OSCCONbits.SCS = 0b00;
+
+    while (!OSCCONbits.IOFS)
+        ;
+
     TRISBbits.TRISB0 = 1;
     INTCON2bits.INTEDG0 = 1;
     INTCONbits.INT0IF = 0;
