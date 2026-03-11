@@ -190,14 +190,20 @@ void put_char(oled_control_t *self)
                 else
                     self->oled_pos.x--;
             } else if (self->oled_pos.x == 0) {
-                if (self->oled_pos.y != 0)
+                /** This is base on picos shell
+                 * backspace only use when command input
+                 */
+                if (self->oled_pos.y != 0) {
                     self->oled_pos.y--;
-                else {
-                    self->oled_pos.y = 0;
-                    /* Todo: deal with prev line */
+                    self->oled_pos.x = 15;
+                } else if (self->oled_show_start != 0) {
+                    self->oled_show_start =
+                        (self->oled_show_start - 15 + CHAR_MEMORY_NUM) %
+                        CHAR_MEMORY_NUM;
+                    self->oled_show_end = self->oled_show_start;
+                    self->start_page = (self->start_page + 6) & 0x7;
+                    oled_cmd(0x40 | (self->start_page * 8));
                 }
-                self->oled_pos.x = 15;
-
             } else
                 self->oled_pos.x--;
 
