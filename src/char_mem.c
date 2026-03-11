@@ -19,6 +19,12 @@ void update_char_mem(char_mem_t *self, char c)
         if (self->end_ptr == self->start_ptr)
             self->start_ptr = (self->start_ptr + 1) % CHAR_MEMORY_NUM;
         self->mem[self->end_ptr] = '\0';
+    } else if (c == '\b') {
+        /** This is base on picos shell
+         * backspace only use when command input
+         */
+        char_cnt = (char_cnt + 15) & 0xF;
+        self->end_ptr = (self->end_ptr - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
     }
 }
 
@@ -28,4 +34,5 @@ void reset_char_mem(char_mem_t *self)
     self->end_ptr = 0;
     for (unsigned int i = 0; i < CHAR_MEMORY_NUM; i++)
         self->mem[i] = '\0';
+    char_cnt = 0;
 }
