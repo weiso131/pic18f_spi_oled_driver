@@ -5,10 +5,10 @@ char char_cnt = 0;
 void update_char_mem(char_mem_t *self, char c)
 {
     if (c == '\n') {
-        self->mem[(self->end_ptr + CHAR_MEMORY_NUM - 1) % CHAR_MEMORY_NUM] |=
-            CHAR_MEMORY_NEWLINE;
-        char_cnt = 0;
-    } else if (c >= 0x20 && c <= 0x7E) {
+        char_cnt = 15;
+        c = 0x20;
+    }
+    if (c >= 0x20 && c <= 0x7E) {
         char_cnt++;
         if (char_cnt == 16) {
             char_cnt = 0;
