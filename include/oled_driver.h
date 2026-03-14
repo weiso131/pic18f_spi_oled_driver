@@ -16,8 +16,10 @@ typedef struct oled_control {
     unsigned int oled_show_start;
     unsigned int oled_show_end;
     char oled_status;
-    /* | 6 bits NOP | 1 bits full line | 1 bits can't print | */
+    /* | 4 bits NOP | 1 bits full line save | 1 bits can't print save | 1 bits
+     * full line | 1 bits can't print | */
     unsigned char start_page;
+    unsigned char prev_line_cnt;
 } oled_control_t;
 
 #define STATUS_CANT_PRINT 0x1

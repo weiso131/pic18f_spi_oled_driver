@@ -54,8 +54,12 @@ void oled_put_char(oled_control_t *self, char _c)
 
 void oled_next_line(oled_control_t *self)
 {
-    if (self->oled_show_end == self->char_mem.end_ptr)
+    INTCONbits.GIEH = 0;
+    if (self->prev_line_cnt == 0) {
+        INTCONbits.GIEH = 1;
         return;
+    }
+    INTCONbits.GIEH = 1;
     self->start_page = (self->start_page + 1) & 0x7;
     oled_cmd(0x40 | (self->start_page * 8));
 
@@ -68,6 +72,8 @@ void oled_next_line(oled_control_t *self)
         }
     }
 
+    self->oled_pos.x = 0;
+    self->oled_pos.y = 7;
     oled_set_pos(self, 7, 0);
 
     for (i = 0; i < 16 && self->char_mem.mem[self->oled_show_end]; i++) {
@@ -83,39 +89,44 @@ void oled_next_line(oled_control_t *self)
         }
     }
 
-    self->oled_pos.x = i;
+    self->oled_pos.x = i & 0xF;
 
     /* clean line */
     for (i = i * 8; i < 128; i++)
         oled_send_data(0x00);
 
-    if (self->char_mem.end_ptr == self->oled_show_end) {
-        self->oled_pos.y = 7;
-        self->oled_status &= STATUS_RESET(STATUS_CANT_PRINT);
-    }
+    INTCONbits.GIEH = 0;
+    if (self->char_mem.end_ptr == self->oled_show_end)
+        self->prev_line_cnt = 0;
+    else
+        self->prev_line_cnt--;
+    INTCONbits.GIEH = 1;
 
     oled_set_pos(self, self->oled_pos.y, self->oled_pos.x * 8);
+
+    if (self->prev_line_cnt == 0) {
+        self->oled_status &=
+            STATUS_RESET(STATUS_FULL_LINE) & STATUS_RESET(STATUS_CANT_PRINT);
+        self->oled_status |= (self->oled_status & 0xC) >> 2;
+        self->oled_status &= 0xF3;
+    }
 }
 
 void oled_prev_line(oled_control_t *self)
 {
-    if (self->oled_show_start == self->char_mem.start_ptr)
+    INTCONbits.GIEH = 0;
+    if (self->oled_show_start == self->char_mem.start_ptr) {
+        INTCONbits.GIEH = 1;
         return;
+    }
+    INTCONbits.GIEH = 1;
     self->start_page = (self->start_page + 0x7) & 0x7;
     oled_cmd(0x40 | (self->start_page * 8));
 
-    self->oled_show_end =
-        (self->oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
+    self->prev_line_cnt++;
 
-    for (i = 0; i < 15; i++) {
-        if (char_mem_is_new_line(
-                self->char_mem,
-                (self->oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM))
-            break;
-        self->oled_show_end =
-            (self->oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
-    }
-
+    self->oled_pos.x = 0;
+    self->oled_pos.y = 0;
     oled_set_pos(self, 0, 0);
 
     self->oled_show_start =
@@ -145,6 +156,23 @@ void oled_prev_line(oled_control_t *self)
     /* clean line */
     for (i = i * 8; i < 128; i++)
         oled_send_data(0x00);
+
+    self->oled_show_end =
+        (self->oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
+
+    for (i = 0; i < 15; i++) {
+        if (char_mem_is_new_line(
+                self->char_mem,
+                (self->oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM))
+            break;
+        self->oled_show_end =
+            (self->oled_show_end - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
+    }
+
+    self->oled_pos.x = (i + 1) & 0xF;
+    self->oled_pos.y = 7;
+    oled_set_pos(self, self->oled_pos.y, self->oled_pos.x * 8);
+    self->oled_status |= (self->oled_status & 0x3) * 4;
     self->oled_status |= STATUS_CANT_PRINT;
 }
 
@@ -157,6 +185,7 @@ void oled_control_init(oled_control_t *self)
     self->oled_show_end = 0;
     self->oled_status = 0;
     self->start_page = 0;
+    self->prev_line_cnt = 0;
     reset_char_mem(&self->char_mem);
     oled_clear(self);
     oled_cmd(0x40);  // reset start page
@@ -205,6 +234,10 @@ void put_char(oled_control_t *self)
         }
         INTCONbits.GIEH = 1;
         INTCONbits.GIEL = 1;
+    }
+    if (self->prev_line_cnt != 0) {
+        INTCONbits.GIEL = 1;
+        return;
     }
 
     if (self->oled_status & STATUS_CANT_PRINT) {
