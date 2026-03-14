@@ -14,17 +14,18 @@ void update_char_mem(char_mem_t *self, char c)
             char_cnt = 0;
             c |= CHAR_MEMORY_NEWLINE;
         }
-        self->mem[self->end_ptr] = c;
-        self->end_ptr = (self->end_ptr + 1) % CHAR_MEMORY_NUM;
-        if (self->end_ptr == self->start_ptr)
-            self->start_ptr = (self->start_ptr + 1) % CHAR_MEMORY_NUM;
-        self->mem[self->end_ptr] = '\0';
-    } else if (c == '\b') {
+        self->mem[self->end_ptr & CHAR_MEMORY_MOD] = c;
+        self->end_ptr++;
+        if ((self->end_ptr & CHAR_MEMORY_MOD) ==
+            (self->start_ptr & CHAR_MEMORY_MOD))
+            self->start_ptr++;
+        self->mem[self->end_ptr & CHAR_MEMORY_MOD] = '\0';
+    } else if (c == '\b' && self->end_ptr != 0) {
         /** This is base on picos shell
          * backspace only use when command input
          */
         char_cnt = (char_cnt + 15) & 0xF;
-        self->end_ptr = (self->end_ptr - 1 + CHAR_MEMORY_NUM) % CHAR_MEMORY_NUM;
+        self->end_ptr--;
     }
     self->char_mem_update = 1;
 }
