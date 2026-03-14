@@ -4,43 +4,61 @@ oled_control_t oled_control;
 
 void picos_comm()
 {
-    while (1) {
-        char c = uart_getchar();
-        INTCONbits.GIE = 0;
-        put_char(&oled_control, c);
-        INTCONbits.GIE = 1;
-    }
+    while (1)
+        put_char(&oled_control);
 }
 
 void __interrupt(high_priority) high_isr(void)
 {
-    if (INTCONbits.INT0IF) {
+    if (PIR1bits.RCIF) {
+        char c = RCREG;
+        if (c == 0x3)
+            oled_control_init(&oled_control);
+        else {
+            update_char_mem(&(oled_control.char_mem), c);
+        }
+        PIR1bits.RCIF = 0;
+    }
+}
+
+void __interrupt(low_priority) low_isr(void)
+{
+    if (INTCON3bits.INT1IF && INTCON3bits.INT1IE) {
         oled_next_line(&oled_control);
-        INTCONbits.INT0IF = 0;
+        INTCON3bits.INT1IF = 0;
     }
 
-    // INT1 External Interrupt
-    if (INTCON3bits.INT1IF) {
+    if (INTCON3bits.INT2IF && INTCON3bits.INT2IE) {
         oled_prev_line(&oled_control);
-        INTCON3bits.INT1IF = 0;
+        INTCON3bits.INT2IF = 0;
     }
 }
 
 void main(void)
 {
-    TRISBbits.TRISB0 = 1;
-    INTCON2bits.INTEDG0 = 1;
-    INTCONbits.INT0IF = 0;
-    INTCONbits.INT0IE = 1;
+    OSCCONbits.IRCF = 0b110;
+    OSCCONbits.SCS = 0b00;
+
+    while (!OSCCONbits.IOFS)
+        ;
 
     TRISBbits.TRISB1 = 1;
     INTCON2bits.INTEDG1 = 1;
     INTCON3bits.INT1IF = 0;
     INTCON3bits.INT1IE = 1;
+    INTCON3bits.INT1IP = 0;  // set as low priority
 
-    RCONbits.IPEN = 0;
-    INTCONbits.GIE = 1;
+    TRISBbits.TRISB2 = 1;
+    INTCON2bits.INTEDG2 = 1;
+    INTCON3bits.INT2IF = 0;
+    INTCON3bits.INT2IE = 1;
+    INTCON3bits.INT2IP = 0;  // set as low priority
+
+    RCONbits.IPEN = 1;
+    INTCONbits.GIEH = 1;
+    INTCONbits.GIEL = 1;
     INTCONbits.PEIE = 1;
+    PIE1bits.RCIE = 1;
 
     uart_init();
 

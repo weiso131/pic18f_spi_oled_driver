@@ -1,9 +1,10 @@
 #define CHAR_MEMORY_NEWLINE 0x80
-#define CHAR_MEMORY_NUM 0x500
-
+#define CHAR_MEMORY_NUM 0x400
+#define CHAR_MEMORY_MOD 0x3FF
 typedef struct char_mem {
     unsigned int start_ptr, end_ptr;
     char mem[CHAR_MEMORY_NUM];
+    char char_mem_update;
 } char_mem_t;
 
 void update_char_mem(char_mem_t *self, char c);
