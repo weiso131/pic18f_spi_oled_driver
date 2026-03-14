@@ -4,6 +4,7 @@
 typedef struct char_mem {
     unsigned int start_ptr, end_ptr;
     char mem[CHAR_MEMORY_NUM];
+    char char_mem_update;
 } char_mem_t;
 
 void update_char_mem(char_mem_t *self, char c);

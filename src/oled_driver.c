@@ -195,8 +195,15 @@ void oled_control_init(oled_control_t *self)
 void put_char(oled_control_t *self)
 {
     while (1) {
-        INTCONbits.GIEH = 0;
         INTCONbits.GIEL = 0;
+        INTCONbits.GIEH = 0;
+        if (self->prev_line_cnt != 0) {
+            if (self->char_mem.char_mem_update)
+                self->prev_line_cnt = 0;
+            INTCONbits.GIEH = 1;
+            INTCONbits.GIEL = 1;
+            continue;
+        }
         if (self->char_mem.end_ptr > self->oled_show_end) {
             INTCONbits.GIEH = 1;
             break;
@@ -231,14 +238,17 @@ void put_char(oled_control_t *self)
                 self->oled_pos.x--;
 
             oled_set_pos(self, self->oled_pos.y, self->oled_pos.x * 8);
+            INTCONbits.GIEH = 0;
+            self->char_mem.char_mem_update = 0;
+            INTCONbits.GIEH = 1;
         }
         INTCONbits.GIEH = 1;
         INTCONbits.GIEL = 1;
     }
-    if (self->prev_line_cnt != 0) {
-        INTCONbits.GIEL = 1;
-        return;
-    }
+
+    INTCONbits.GIEH = 0;
+    self->char_mem.char_mem_update = 0;
+    INTCONbits.GIEH = 1;
 
     if (self->oled_status & STATUS_CANT_PRINT) {
         self->start_page = (self->start_page + 1) & 0x7;
